@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Undo and Redo Using Character Stack Implementation | DSA Micro-Project</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Navigation / Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <span class="brand-badge">DSA Micro-Project &bull; Character Stack</span>
+        <h1>Undo and Redo Using Stack Implementation</h1>
+        <p class="subtitle">Each stack element stores a single character (char items[MAX]) powered by C</p>
+      </div>
+      <div class="server-status-pill" id="serverStatusBadge">
+        <span class="status-dot online"></span>
+        <span id="serverStatusText">C Backend Active</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+
+    <!-- Notification / Feedback Toast Banner -->
+    <div id="feedbackBanner" class="feedback-banner info">
+      <div class="banner-content">
+        <span class="banner-title" id="bannerTitle">Welcome to Character Stack Demo!</span>
+        <span class="banner-msg" id="bannerMessage">Type any character in the editor below. Each keystroke pushes a single character element onto the stack!</span>
+      </div>
+      <button class="banner-close" onclick="dismissBanner()" title="Dismiss">&times;</button>
+    </div>
+
+    <!-- Interactive Workspace Grid -->
+    <div class="workspace-grid">
+
+      <!-- LEFT COLUMN: Editor, Active Text, and Controls -->
+      <section class="panel control-panel">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <h2>Character Editor & Controls</h2>
+          </div>
+          <span class="badge badge-subtle">C Type: <code>char items[MAX]</code></span>
+        </div>
+
+        <!-- Current Text Display Card -->
+        <div class="current-text-card">
+          <div class="current-text-header">
+            <span class="label">CURRENT ACTIVE TEXT IN C MEMORY</span>
+            <span class="text-length-badge" id="currentTextLen">0 chars</span>
+          </div>
+          <div class="current-text-body" id="currentTextDisplay">
+            <span class="empty-placeholder">(Empty document text)</span>
+          </div>
+        </div>
+
+        <!-- Text Input Area -->
+        <div class="editor-group">
+          <label for="textInput" class="editor-label">
+            <span>Type Here (Every Keystroke Pushes a Character to Stack):</span>
+            <span class="shortcut-tip"><kbd>Ctrl</kbd>+<kbd>Z</kbd> Undo &bull; <kbd>Ctrl</kbd>+<kbd>Y</kbd> Redo</span>
+          </label>
+          <textarea id="textInput" class="text-editor" rows="3" placeholder="Type letters here (e.g. 'Hello World'). Every character is an element on the stack..."></textarea>
+        </div>
+
+        <!-- Primary Character Action Buttons -->
+        <div class="button-group">
+          <button id="btnUndo" class="btn btn-action btn-undo" onclick="handleUndo()">
+            <span class="btn-label">Undo (1 Char)</span>
+            <span class="btn-badge" id="undoBadge">0</span>
+          </button>
+          <button id="btnUndoWord" class="btn btn-action btn-undo" onclick="handleUndoWord()">
+            <span class="btn-label">Undo Word</span>
+          </button>
+          <button id="btnRedo" class="btn btn-action btn-redo" onclick="handleRedo()">
+            <span class="btn-label">Redo (1 Char)</span>
+            <span class="btn-badge" id="redoBadge">0</span>
+          </button>
+          <button id="btnRedoWord" class="btn btn-action btn-redo" onclick="handleRedoWord()">
+            <span class="btn-label">Redo Word</span>
+          </button>
+        </div>
+
+        <div class="button-group secondary-buttons">
+          <button id="btnEdit" class="btn btn-primary" onclick="handleApplyText()">
+            <span class="btn-label">Push Full Text</span>
+          </button>
+          <button id="btnDisplay" class="btn btn-secondary" onclick="handleDisplay()">
+            <span class="btn-label">Display Current Text</span>
+          </button>
+          <button id="btnReset" class="btn btn-danger" onclick="handleReset()">
+            <span class="btn-label">Reset All</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN: Dual Stack Visualizer -->
+      <section class="panel visualizer-panel">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <h2>Character Stack Visualization</h2>
+          </div>
+          <span class="badge badge-accent">1 Element = 1 Character (Top is at the TOP)</span>
+        </div>
+
+        <div class="stacks-container">
+
+          <!-- UNDO STACK -->
+          <div class="stack-column undo-column">
+            <div class="stack-header">
+              <div class="stack-title">
+                <h3>Undo Stack</h3>
+              </div>
+              <div class="stack-meta">
+                <span class="meta-tag" id="undoTopLabel">top = -1</span>
+                <span class="meta-tag count" id="undoCountLabel">0 / 100</span>
+              </div>
+            </div>
+            <div class="stack-subtext">Characters in active text (Newest character is at the TOP)</div>
+
+            <!-- Top Entrance Indicator -->
+            <div class="stack-mouth-indicator undo-mouth">
+              <span>TOP OF STACK (Push / Pop Point)</span>
+            </div>
+
+            <div class="stack-cylinder-wrapper">
+              <div class="stack-cylinder" id="undoStackView">
+                <!-- Character cards rendered by JS -->
+              </div>
+            </div>
+            <div class="stack-base">
+              <span>Stack Bottom (Index 0)</span>
+            </div>
+          </div>
+
+          <!-- REDO STACK -->
+          <div class="stack-column redo-column">
+            <div class="stack-header">
+              <div class="stack-title">
+                <h3>Redo Stack</h3>
+              </div>
+              <div class="stack-meta">
+                <span class="meta-tag" id="redoTopLabel">top = -1</span>
+                <span class="meta-tag count" id="redoCountLabel">0 / 100</span>
+              </div>
+            </div>
+            <div class="stack-subtext">Undone characters (Restored character-by-character on Redo)</div>
+
+            <!-- Top Entrance Indicator -->
+            <div class="stack-mouth-indicator redo-mouth">
+              <span>TOP OF STACK (Push / Pop Point)</span>
+            </div>
+
+            <div class="stack-cylinder-wrapper">
+              <div class="stack-cylinder" id="redoStackView">
+                <!-- Character cards rendered by JS -->
+              </div>
+            </div>
+            <div class="stack-base">
+              <span>Stack Bottom (Index 0)</span>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- Core C Program Code Section -->
+    <section class="panel c-code-section">
+      <div class="panel-header">
+        <div class="panel-title-group">
+          <h2>Core C Program Implementation</h2>
+        </div>
+        <span class="badge badge-accent">server.c</span>
+      </div>
+
+      <div class="code-preview">
+<pre><code><span class="c-comment">/* 1. Pure Character Stack in C */</span>
+<span class="c-keyword">#define</span> MAX 100
+
+<span class="c-keyword">typedef struct</span> {
+    <span class="c-type">char</span> items[MAX];  <span class="c-comment">/* Each element of the stack is a character */</span>
+    <span class="c-type">int</span> top;
+} <span class="c-type">Stack</span>;
+
+<span class="c-type">Stack</span> undoStack, redoStack;
+<span class="c-type">char</span> currentText[MAX + 1] = <span class="c-string">""</span>;
+
+<span class="c-comment">/* 2. Push &amp; Pop Character Functions */</span>
+<span class="c-type">int</span> <span class="c-func">push</span>(<span class="c-type">Stack</span> *s, <span class="c-type">char</span> c) {
+    <span class="c-keyword">if</span> (s-&gt;top == MAX - 1) <span class="c-keyword">return</span> 0; <span class="c-comment">/* Stack Overflow */</span>
+    s-&gt;top++;
+    s-&gt;items[s-&gt;top] = c;
+    <span class="c-keyword">return</span> 1;
+}
+
+<span class="c-type">char</span> <span class="c-func">pop</span>(<span class="c-type">Stack</span> *s) {
+    <span class="c-keyword">if</span> (s-&gt;top == -1) <span class="c-keyword">return</span> <span class="c-string">'\0'</span>;   <span class="c-comment">/* Stack Underflow */</span>
+    <span class="c-type">char</span> c = s-&gt;items[s-&gt;top];
+    s-&gt;top--;
+    <span class="c-keyword">return</span> c;
+}</code></pre>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <div class="footer-container">
+      <p>Data Structures and Algorithms Micro-Project &bull; <strong>Undo and Redo Using Character Stack Implementation</strong></p>
+      <p class="footer-sub">Pure C Character Stack (char items[MAX]) &bull; O(1) Push/Pop Time Complexity</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
